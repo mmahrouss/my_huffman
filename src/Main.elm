@@ -24,7 +24,7 @@ main =
 type alias Model =
     { content : String --String to Encode.
     , table : List ( String, Float, String ) --encoding table
-    , encode : Bool --Flag to Calculate only on clicking encode
+    , showTable : Bool --Flag to Calculate only on clicking encode
     }
 
 
@@ -32,7 +32,7 @@ init : Model
 init =
     { content = ""
     , table = []
-    , encode = False
+    , showTable = False
     }
 
 
@@ -42,18 +42,18 @@ init =
 
 type Msg
     = Change String
-    | Encode --should be sent after clicking an encode button
+    | MakeTable --should be sent after clicking an Make Table button
 
 
 update : Msg -> Model -> Model
 update msg model =
     case msg of
         Change newContent ->
-            { model | content = newContent, encode = False }
+            { model | content = newContent, showTable = False, table = [] }
 
-        Encode ->
+        MakeTable ->
             { model
-                | encode = True
+                | showTable = True
                 , table =
                     case MyHuffman.get_huffman_table (.content model) of
                         Just m ->
@@ -73,23 +73,18 @@ view model =
     div []
         [ input [ placeholder "Text to encode", value model.content, onInput Change ] []
         , div [] [ text model.content ]
-        , button [ onClick Encode ] [ text "Encode" ]
-        , viewValidation model
+        , button [ onClick MakeTable ] [ text "Show table" ]
+        , viewTable model
         ]
 
 
-viewValidation : Model -> Html msg
-viewValidation model =
-    if model.encode then
+viewTable : Model -> Html msg
+viewTable model =
+    if model.showTable then
         table
             [ style "width" "75%" ]
-            (tr
-                []
-                [ th [] [ text "Symbol" ]
-                , th [] [ text "Probability" ]
-                , th [] [ text "Code" ]
-                ]
-                :: table2rows (.table model)
+            (table2rows
+                (.table model)
             )
 
     else
@@ -116,4 +111,14 @@ table2rows_helper l html_row_list =
 
 table2rows : List ( String, Float, String ) -> List (Html msg)
 table2rows l =
-    table2rows_helper l []
+    if List.length l == 0 then
+        [ div [ style "color" "red" ] [ text "Empty String, Please write something" ] ]
+
+    else
+        tr
+            []
+            [ th [] [ text "Symbol" ]
+            , th [] [ text "Probability" ]
+            , th [] [ text "Code" ]
+            ]
+            :: table2rows_helper l []
