@@ -1,4 +1,4 @@
-module MyHuffman exposing (..)
+module MyHuffman exposing (encode, get_huffman_table)
 
 import Dict exposing (Dict, empty, insert)
 
@@ -24,54 +24,43 @@ htget f x =
             f y
 
 
-huffman_partition : List HTreeNode -> Maybe HTreeNode
-huffman_partition xs =
+get_sym2code_dict : List ( String, Float, String ) -> Dict String String
+get_sym2code_dict l =
     let
-        sorted_xs =
-            List.sortBy (htget .prob) xs
+        helper : List ( String, Float, String ) -> Dict String String -> Dict String String
+        helper l2 d =
+            case l2 of
+                ( sym, _, code ) :: ltail ->
+                    helper ltail (insert sym code d)
+
+                [] ->
+                    d
     in
-    case
-        sorted_xs
-    of
-        rchild :: lchild :: ys ->
-            huffman_partition
-                (HTreeNode
-                    { name = htget .name rchild ++ htget .name lchild
-                    , prob = htget .prob rchild + htget .prob lchild
-                    , children =
-                        Just
-                            { lchild = lchild
-                            , rchild = rchild
-                            }
-                    }
-                    :: ys
-                )
-
-        y :: [] ->
-            Just y
-
-        [] ->
-            Nothing
+    helper l empty
 
 
-assign_code_helper : HTreeNode -> String -> List ( String, Float, String )
-assign_code_helper (HTreeNode { name, prob, children }) st =
-    case children of
-        Nothing ->
-            [ ( name, prob, st ) ]
+encode : String -> List ( String, Float, String ) -> String
+encode s table =
+    let
+        sym2code =
+            get_sym2code_dict table
 
-        Just { lchild, rchild } ->
-            assign_code_helper lchild (st ++ "0") ++ assign_code_helper rchild (st ++ "1")
+        helper : String -> String -> String
+        helper s2 s_encoded =
+            case String.uncons s2 of
+                Nothing ->
+                    s_encoded
 
+                Just ( sym, stail ) ->
+                    case Dict.get (String.fromChar sym) sym2code of
+                        Nothing ->
+                            -- Should not happen anyway
+                            ""
 
-assign_codes : Maybe HTreeNode -> Maybe (List ( String, Float, String ))
-assign_codes tnode =
-    case tnode of
-        Just atnode ->
-            Just (assign_code_helper atnode "")
-
-        Nothing ->
-            Nothing
+                        Just code ->
+                            helper stail (s_encoded ++ code)
+    in
+    helper s ""
 
 
 get_huffman_table : String -> Maybe (List ( String, Float, String ))
@@ -122,3 +111,53 @@ get_tree_helper l ht =
 get_tree : List ( Char, Float ) -> List HTreeNode
 get_tree l =
     get_tree_helper l []
+
+
+huffman_partition : List HTreeNode -> Maybe HTreeNode
+huffman_partition xs =
+    let
+        sorted_xs =
+            List.sortBy (htget .prob) xs
+    in
+    case
+        sorted_xs
+    of
+        rchild :: lchild :: ys ->
+            huffman_partition
+                (HTreeNode
+                    { name = htget .name rchild ++ htget .name lchild
+                    , prob = htget .prob rchild + htget .prob lchild
+                    , children =
+                        Just
+                            { lchild = lchild
+                            , rchild = rchild
+                            }
+                    }
+                    :: ys
+                )
+
+        y :: [] ->
+            Just y
+
+        [] ->
+            Nothing
+
+
+assign_code_helper : HTreeNode -> String -> List ( String, Float, String )
+assign_code_helper (HTreeNode { name, prob, children }) st =
+    case children of
+        Nothing ->
+            [ ( name, prob, st ) ]
+
+        Just { lchild, rchild } ->
+            assign_code_helper lchild (st ++ "0") ++ assign_code_helper rchild (st ++ "1")
+
+
+assign_codes : Maybe HTreeNode -> Maybe (List ( String, Float, String ))
+assign_codes tnode =
+    case tnode of
+        Just atnode ->
+            Just (assign_code_helper atnode "")
+
+        Nothing ->
+            Nothing

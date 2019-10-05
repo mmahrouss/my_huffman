@@ -9,7 +9,6 @@ import MyHuffman
 
 
 
--- import MyHuffman
 -- MAIN
 
 
@@ -23,8 +22,10 @@ main =
 
 type alias Model =
     { content : String --String to Encode.
+    , encoded_content : String --Encoded string
     , table : List ( String, Float, String ) --encoding table
-    , showTable : Bool --Flag to Calculate only on clicking encode
+    , showTable : Bool --Flag to Calculate only on clicking show table
+    , showEncoded : Bool --Flag to Calculate only on clicking encode
     }
 
 
@@ -32,7 +33,9 @@ init : Model
 init =
     { content = ""
     , table = []
+    , encoded_content = ""
     , showTable = False
+    , showEncoded = False
     }
 
 
@@ -43,13 +46,17 @@ init =
 type Msg
     = Change String
     | MakeTable --should be sent after clicking an Make Table button
+    | Encode -- Should be sent after clicking encode Button
 
 
 update : Msg -> Model -> Model
 update msg model =
     case msg of
         Change newContent ->
-            { model | content = newContent, showTable = False, table = [] }
+            { model | content = newContent, showTable = False, showEncoded = False, table = [] }
+
+        Encode ->
+            { model | showEncoded = True, encoded_content = MyHuffman.encode (.content model) (.table model) }
 
         MakeTable ->
             { model
@@ -74,8 +81,27 @@ view model =
         [ input [ placeholder "Text to encode", value model.content, onInput Change ] []
         , div [] [ text model.content ]
         , button [ onClick MakeTable ] [ text "Show table" ]
+        , button [ onClick Encode ] [ text "Encode" ]
+        , viewEncoded model
         , viewTable model
         ]
+
+
+viewEncoded : Model -> Html msg
+viewEncoded model =
+    if model.showEncoded then
+        let
+            txt =
+                model.encoded_content
+        in
+        if String.length txt == 0 then
+            div [ style "color" "red" ] [ text "Please Show Table First" ]
+
+        else
+            div [ style "color" "green" ] [ text model.encoded_content ]
+
+    else
+        div [] []
 
 
 viewTable : Model -> Html msg
