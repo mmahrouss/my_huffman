@@ -56,7 +56,7 @@ update msg model =
             { model | content = newContent, showTable = False, showEncoded = False, table = [] }
 
         Encode ->
-            { model | showEncoded = True, encoded_content = MyHuffman.encode (.content model) (.table model) }
+            { model | showEncoded = True, encoded_content = MyHuffman.encode (.table model) (.content model) }
 
         MakeTable ->
             { model

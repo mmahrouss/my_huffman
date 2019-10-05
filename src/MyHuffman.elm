@@ -29,15 +29,15 @@ get_huffman_table =
     get_probs >> get_tree >> huffman_partition >> assign_codes
 
 
-encode : String -> List ( String, Float, String ) -> String
-encode s table =
+encode : List ( String, Float, String ) -> String -> String
+encode table =
     let
         sym2code =
             get_sym2code_dict table
 
         helper : String -> String -> String
-        helper s2 s_encoded =
-            case String.uncons s2 of
+        helper s_encoded s =
+            case String.uncons s of
                 Nothing ->
                     s_encoded
 
@@ -48,32 +48,35 @@ encode s table =
                             ""
 
                         Just code ->
-                            helper stail (s_encoded ++ code)
+                            helper (s_encoded ++ code) stail
     in
-    helper s ""
+    helper ""
 
 
 get_sym2code_dict : List ( String, Float, String ) -> Dict String String
-get_sym2code_dict l =
+get_sym2code_dict =
     let
-        helper : List ( String, Float, String ) -> Dict String String -> Dict String String
-        helper l2 d =
-            case l2 of
+        helper : Dict String String -> List ( String, Float, String ) -> Dict String String
+        helper d l =
+            case l of
                 ( sym, _, code ) :: ltail ->
-                    helper ltail (insert sym code d)
+                    helper (insert sym code d) ltail
 
                 [] ->
                     d
     in
-    helper l empty
+    helper empty
 
 
 get_probs : String -> List ( Char, Float )
 get_probs s =
     let
+        slen =
+            String.length s
+
         get_probs_helper : String -> Dict Char Float -> Dict Char Float
-        get_probs_helper s2 d =
-            case String.uncons s2 of
+        get_probs_helper s_helper d =
+            case String.uncons s_helper of
                 Nothing ->
                     d
 
@@ -85,20 +88,20 @@ get_probs s =
                         Nothing ->
                             get_probs_helper stail (insert ch 1.0 d)
     in
-    List.map (\( ch, f ) -> ( ch, f / toFloat (String.length s) ))
+    List.map (\( ch, f ) -> ( ch, f / toFloat slen ))
         (Dict.toList
             (get_probs_helper s empty)
         )
 
 
 get_tree : List ( Char, Float ) -> List HTreeNode
-get_tree l =
+get_tree =
     let
-        get_tree_helper : List ( Char, Float ) -> List HTreeNode -> List HTreeNode
-        get_tree_helper l2 ht =
-            case l2 of
+        get_tree_helper : List HTreeNode -> List ( Char, Float ) -> List HTreeNode
+        get_tree_helper ht l =
+            case l of
                 ( ch, f ) :: ltail ->
-                    get_tree_helper ltail
+                    get_tree_helper
                         (HTreeNode
                             { name = String.fromChar ch
                             , prob = f
@@ -106,11 +109,12 @@ get_tree l =
                             }
                             :: ht
                         )
+                        ltail
 
                 [] ->
                     ht
     in
-    get_tree_helper l []
+    get_tree_helper []
 
 
 huffman_partition : List HTreeNode -> Maybe HTreeNode
