@@ -2,6 +2,7 @@
 Elm implementation of Huffman symbol coding
 
 To build run `elm make src/Main.elm --optimize --output docs/index.html `
+Try it out [now](https://mmahrouss.github.io/my_huffman/)
 
 ## Motivation:
 
